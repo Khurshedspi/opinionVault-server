@@ -2,13 +2,15 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5173",'http://localhost:5174'],
+    credentials: true,
   })
 );
 
@@ -25,14 +27,56 @@ const client = new MongoClient(uri, {
   },
 });
 
+// verifyToken
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) return res.status(401).send({ message: "unauthorized access" });
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    req.user = decoded;
+  });
+
+  next();
+};
+
 async function run() {
   try {
     const servicesCollection = client.db("services").collection("service");
     const reviewCollection = client.db("services").collection("review");
 
+    // generate jwt
+    app.post("/jwt", async (req, res) => {
+      const email = req.body;
+      // create token
+      const token = jwt.sign(email, process.env.JWT_SECRET, {
+        expiresIn: "365d",
+      });
+      console.log(token);
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+
+    // logout || clear cookie from browser
+    app.get("/logout", async (req, res) => {
+      res
+        .clearCookie("token", {
+          maxAge: 0,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+
     app.get("/services", async (req, res) => {
       try {
-        const { email, search } = req.query;
+        const { email, search, titleSearch } = req.query;
         const query = {};
 
         if (email) {
@@ -41,6 +85,10 @@ async function run() {
 
         if (search) {
           query.category = { $regex: search, $options: "i" };
+        }
+
+        if (titleSearch) {
+          query.title = { $regex: titleSearch, $options: "i" };
         }
 
         const result = await servicesCollection.find(query).toArray();
@@ -104,8 +152,10 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/userReviews/:email", async (req, res) => {
+    app.get("/userReviews/:email",verifyToken, async (req, res) => {
       const email = req.params.email;
+      const decodedEmail = req?.user?.email;
+      if (email !== decodedEmail) return res.status(401).send({ message: "unauthorized access" });
       const query = { email: email };
       try {
         const result = await reviewCollection.find(query).toArray();
