@@ -42,20 +42,43 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/services", async (req, res) => {
+      const email = req.body.email;
+      const query = { email: email };
+      const result = await servicesCollection.find(query).toArray();
+      res.send(result);
+    });
+
     app.post("/services", async (req, res) => {
       const services = req.body;
       const result = await servicesCollection.insertOne(services);
       res.send(result);
     });
 
+    app.delete('/services/:id', async(req,res)=>{
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await servicesCollection.deleteOne(query)
+      res.send(result);
+    })
+
+    // user review part here
+
     app.get("/userReview", async (req, res) => {
       const result = await reviewCollection.find().toArray();
       res.send(result);
     });
 
+    app.get("/services", async (req, res) => {
+      const email = req.body.email;
+      const query = { email: email };
+      const result = await reviewCollection.find(query).toArray();
+      res.send(result);
+    });
+
     app.get("/userReview/:id", async (req, res) => {
       const id = req.params.id;
-      const filter = { reviewId: id }; // Filter by reviewId
+      const filter = { reviewId: id };
       const result = await reviewCollection.find(filter).toArray();
       res.send(result);
     });
@@ -87,6 +110,8 @@ async function run() {
         res.send(result);
       }
     });
+
+
 
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
