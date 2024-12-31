@@ -55,12 +55,24 @@ async function run() {
       res.send(result);
     });
 
-    app.delete('/services/:id', async(req,res)=>{
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const result = await servicesCollection.deleteOne(query)
+    app.delete("/services/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await servicesCollection.deleteOne(query);
       res.send(result);
-    })
+    });
+
+    app.put("/services/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateData = req.body;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: updateData,
+      };
+
+      const result = await servicesCollection.updateOne(query, updateDoc);
+      res.send(result)
+    });
 
     // user review part here
 
@@ -110,8 +122,6 @@ async function run() {
         res.send(result);
       }
     });
-
-
 
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
