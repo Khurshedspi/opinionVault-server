@@ -31,7 +31,30 @@ async function run() {
     const reviewCollection = client.db("services").collection("review");
 
     app.get("/services", async (req, res) => {
-      const result = await servicesCollection.find().toArray();
+      try {
+        const { email, search } = req.query;
+        const query = {};
+
+        if (email) {
+          query.email = email;
+        }
+
+        if (search) {
+          query.category = { $regex: search, $options: "i" };
+        }
+
+        const result = await servicesCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching services:", error);
+        res.status(500).send({ error: "Failed to fetch services" });
+      }
+    });
+
+    app.get("/services", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await reviewCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -39,13 +62,6 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await servicesCollection.findOne(query);
-      res.send(result);
-    });
-
-    app.get("/services", async (req, res) => {
-      const email = req.body.email;
-      const query = { email: email };
-      const result = await servicesCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -71,7 +87,7 @@ async function run() {
       };
 
       const result = await servicesCollection.updateOne(query, updateDoc);
-      res.send(result)
+      res.send(result);
     });
 
     // user review part here
@@ -81,18 +97,22 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/services", async (req, res) => {
-      const email = req.body.email;
-      const query = { email: email };
-      const result = await reviewCollection.find(query).toArray();
-      res.send(result);
-    });
-
     app.get("/userReview/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { reviewId: id };
       const result = await reviewCollection.find(filter).toArray();
       res.send(result);
+    });
+
+    app.get("/userReviews/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      try {
+        const result = await reviewCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: "Failed to fetch user reviews" });
+      }
     });
 
     app.post("/userReview", async (req, res) => {
@@ -121,6 +141,31 @@ async function run() {
       if (updateRes.modifiedCount > 0) {
         res.send(result);
       }
+    });
+
+    app.put("/userReview/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateData = req.body;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: updateData,
+      };
+
+      try {
+        const result = await reviewCollection.updateOne(query, updateDoc);
+        res.send(result);
+      } catch (error) {
+        res
+          .status(500)
+          .send({ success: false, error: "Failed to update review" });
+      }
+    });
+
+    app.delete("/userReview/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await reviewCollection.deleteOne(query);
+      res.send(result);
     });
 
     // Connect the client to the server	(optional starting in v4.7)
