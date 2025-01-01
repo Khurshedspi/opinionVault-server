@@ -5,13 +5,12 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 
-
 const app = express();
 
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173",'http://localhost:5174'],
+    origin: ["http://localhost:5173", "https://opinion-vault-a11.netlify.app"],
     credentials: true,
   })
 );
@@ -34,11 +33,11 @@ const client = new MongoClient(uri, {
 // verifyToken
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
-  console.log(token);
+  // console.log(token);
   if (!token) return res.status(401).send({ message: "unauthorized access" });
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
-      console.log(err);
+      // console.log(err);
       return res.status(401).send({ message: "unauthorized access" });
     }
     req.user = decoded;
@@ -59,7 +58,7 @@ async function run() {
       const token = jwt.sign(email, process.env.JWT_SECRET, {
         expiresIn: "365d",
       });
-      console.log(token);
+      // console.log(token);
       res
         .cookie("token", token, {
           httpOnly: true,
@@ -100,7 +99,7 @@ async function run() {
         const result = await servicesCollection.find(query).toArray();
         res.send(result);
       } catch (error) {
-        console.error("Error fetching services:", error);
+        // console.error("Error fetching services:", error);
         res.status(500).send({ error: "Failed to fetch services" });
       }
     });
@@ -112,10 +111,10 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/userReviewData', async (req, res) => {
+    app.get("/userReviewData", async (req, res) => {
       const result = await servicesCollection.find().limit(6).toArray();
       res.send(result);
-    })
+    });
 
     app.get("/services/:id", async (req, res) => {
       const id = req.params.id;
@@ -124,7 +123,7 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/services" , async (req, res) => {
+    app.post("/services", async (req, res) => {
       const services = req.body;
       const result = await servicesCollection.insertOne(services);
       res.send(result);
@@ -166,7 +165,8 @@ async function run() {
     app.get("/userReviews/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       const decodedEmail = req?.user?.email;
-      if (email != decodedEmail) return res.status(401).send({ message: "unauthorized access" });
+      if (email != decodedEmail)
+        return res.status(401).send({ message: "unauthorized access" });
       const query = { email: email };
       try {
         const result = await reviewCollection.find(query).toArray();
@@ -176,7 +176,7 @@ async function run() {
       }
     });
 
-    app.post("/userReview",verifyToken, async (req, res) => {
+    app.post("/userReview", verifyToken, async (req, res) => {
       const services = req.body;
       const result = await reviewCollection.insertOne(services);
 
@@ -204,7 +204,7 @@ async function run() {
       }
     });
 
-    app.put("/userReview/:id",verifyToken, async (req, res) => {
+    app.put("/userReview/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const updateData = req.body;
       const query = { _id: new ObjectId(id) };
@@ -222,7 +222,7 @@ async function run() {
       }
     });
 
-    app.delete("/userReview/:id",verifyToken, async (req, res) => {
+    app.delete("/userReview/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await reviewCollection.deleteOne(query);
@@ -232,10 +232,10 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
