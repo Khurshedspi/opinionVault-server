@@ -112,6 +112,11 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/userReviewData', async (req, res) => {
+      const result = await servicesCollection.find().limit(6).toArray();
+      res.send(result);
+    })
+
     app.get("/services/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -119,20 +124,20 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/services", async (req, res) => {
+    app.post("/services" , async (req, res) => {
       const services = req.body;
       const result = await servicesCollection.insertOne(services);
       res.send(result);
     });
 
-    app.delete("/services/:id", async (req, res) => {
+    app.delete("/services/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await servicesCollection.deleteOne(query);
       res.send(result);
     });
 
-    app.put("/services/:id", async (req, res) => {
+    app.put("/services/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const updateData = req.body;
       const query = { _id: new ObjectId(id) };
@@ -161,7 +166,6 @@ async function run() {
     app.get("/userReviews/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       const decodedEmail = req?.user?.email;
-      console.log(email, decodedEmail);
       if (email != decodedEmail) return res.status(401).send({ message: "unauthorized access" });
       const query = { email: email };
       try {
@@ -172,7 +176,7 @@ async function run() {
       }
     });
 
-    app.post("/userReview", async (req, res) => {
+    app.post("/userReview",verifyToken, async (req, res) => {
       const services = req.body;
       const result = await reviewCollection.insertOne(services);
 
@@ -200,7 +204,7 @@ async function run() {
       }
     });
 
-    app.put("/userReview/:id", async (req, res) => {
+    app.put("/userReview/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const updateData = req.body;
       const query = { _id: new ObjectId(id) };
@@ -218,7 +222,7 @@ async function run() {
       }
     });
 
-    app.delete("/userReview/:id", async (req, res) => {
+    app.delete("/userReview/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await reviewCollection.deleteOne(query);
