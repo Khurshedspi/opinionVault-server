@@ -3,6 +3,8 @@ const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+
 
 const app = express();
 
@@ -13,6 +15,8 @@ app.use(
     credentials: true,
   })
 );
+
+app.use(cookieParser());
 
 const port = process.env.PORT || 5000;
 
@@ -30,9 +34,11 @@ const client = new MongoClient(uri, {
 // verifyToken
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
+  console.log(token);
   if (!token) return res.status(401).send({ message: "unauthorized access" });
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
+      console.log(err);
       return res.status(401).send({ message: "unauthorized access" });
     }
     req.user = decoded;
@@ -152,10 +158,11 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/userReviews/:email",verifyToken, async (req, res) => {
+    app.get("/userReviews/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       const decodedEmail = req?.user?.email;
-      if (email !== decodedEmail) return res.status(401).send({ message: "unauthorized access" });
+      console.log(email, decodedEmail);
+      if (email != decodedEmail) return res.status(401).send({ message: "unauthorized access" });
       const query = { email: email };
       try {
         const result = await reviewCollection.find(query).toArray();
